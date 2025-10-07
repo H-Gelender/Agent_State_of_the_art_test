@@ -33,6 +33,9 @@ def arxiv_retriever(query: str, max_results: int = 3) -> List[ArxivPaper]:
 
         papers = []
         for result in search.results():
+            
+            result.download_pdf("data/pdf/", filename=f"{result.title}.pdf")
+
             author_names = [author.name for author in result.authors]
             papers.append(ArxivPaper(
                 title=result.title,
