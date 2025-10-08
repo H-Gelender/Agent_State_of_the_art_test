@@ -8,3 +8,5 @@ python-dotenv
 requests
 rich
 asyncclick
+fasta2a
+flask

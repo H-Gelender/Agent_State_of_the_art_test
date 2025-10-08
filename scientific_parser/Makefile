@@ -23,3 +23,13 @@ run-server:
 run-client:
 	@echo "Starting MCP client..."
 	uv run -m agents.scientist_agent.mcp_client
+
+.PHONY: run-a2a-server
+run-a2a-server:
+	@echo "Starting a2a server..."
+	python a2a/server/tell_time_agent.py
+
+.PHONY: run-a2a-client
+run-a2a-client:
+	@echo "Starting a2a client..."
+	python a2a/client/time_client.py
