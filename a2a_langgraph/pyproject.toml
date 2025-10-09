@@ -1,0 +1,26 @@
+[project]
+name = "a2a-langgraph"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic-ai",
+    "mcp",
+    "pydantic-graph",
+    "arxiv",
+    "google-generativeai",
+    "python-dotenv",
+    "requests",
+    "rich",
+    "asyncclick",
+    "flask",
+    "a2a-sdk",
+    "langchain",
+    "langgraph",
+    "google-genai",
+    "httpx",
+    "langchain-google-genai",
+    "uvicorn",
+    "click",
+]

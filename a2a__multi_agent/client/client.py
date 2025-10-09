@@ -3,7 +3,6 @@ import httpx
 from fasta2a.client import A2AClient
 from fasta2a.schema import Message, TextPart
 import uuid
-import json
 
 # --- Agent Discovery ---
 
@@ -73,6 +72,8 @@ async def orchestrate_task(agent_urls, prompt):
 
 if __name__ == "__main__":
     from discovery import AgentDiscovery
+    import logging
+    logging.basicConfig(level=logging.INFO)
     discovery = AgentDiscovery()
     prompt = input("What do you want to do? ")
     asyncio.run(orchestrate_task(discovery.urls, prompt))
