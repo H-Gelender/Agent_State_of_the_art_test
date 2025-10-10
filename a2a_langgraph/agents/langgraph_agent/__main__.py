@@ -7,7 +7,7 @@ import httpx
 from dotenv import load_dotenv
 
 from .agent import TellTimeAgent
-from .agent_orchestrator import TellTimeAgentExecutor
+from .agent_executor import TellTimeAgentExecutor
 
 # --- These are the CORRECT imports from a2a-sdk ---
 from a2a.server.apps import A2AStarletteApplication

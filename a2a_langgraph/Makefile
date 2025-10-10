@@ -22,7 +22,8 @@ a2a-project:
 
 	@echo creating structure client
 	echo. > client/client.py
-
+	echo. > client/orchestrator.py
+	echo. > client/__main__.py
 	@echo creating uv structure
 	uv init
 	
@@ -40,19 +41,4 @@ run-pydantic:
 .PHONY: run-client
 run-client:
 	@echo "Starting a2a client..."
-	python client/client.py
-
-.PHONY: run-orchestrator
-run-orchestrator:
-	@echo "Starting a2a orchestrator..."
-	python client/orchestrator.py
-
-.PHONY: run-simple-orchestrator
-run-simple-orchestrator:
-	@echo "Starting simple orchestrator (registry-based)..."
-	python client/simple_orchestrator.py
-
-.PHONY: run-clean-orchestrator
-run-clean-orchestrator:
-	@echo "Starting clean orchestrator (minimal code)..."
-	python client/orchestrator_clean.py
+	uv run -m client.client

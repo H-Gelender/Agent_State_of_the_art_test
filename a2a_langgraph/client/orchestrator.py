@@ -1,146 +1,85 @@
-import asyncio
+
 import httpx
-import json
 import logging
 import os
-from pathlib import Path
 from uuid import uuid4
-from typing import Dict, Optional
+from typing import Any
 
-from a2a.client import A2AClient, A2ACardResolver
 from a2a.types import MessageSendParams, SendMessageRequest
+
+from dotenv import load_dotenv
+
+from dataclasses import dataclass
+from pydantic_ai import Agent, RunContext
+from .prompt import PROMPT
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class IntelligentAgentRegistry:
-    """Intelligent agent registry with LLM-based routing."""
-    
-    def __init__(self, registry_path: str = "client/agent_registry.json"):
-        self.registry_path = Path(registry_path)
-        self.agents: Dict[str, str] = {}
-        self.clients: Dict[str, A2AClient] = {}
-        self.agent_cards: Dict[str, dict] = {}
-    
-    def load_registry(self) -> bool:
-        """Load agents from registry file."""
-        try:
-            with open(self.registry_path, 'r') as f:
-                self.agents = json.load(f)
-            logger.info(f"📂 Loaded {len(self.agents)} agents from registry")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to load registry: {e}")
-            return False
-    
-    async def discover_agents(self, httpx_client: httpx.AsyncClient) -> int:
-        """Discover agent capabilities and build detailed registry."""
-        discovered = 0
-        for name, url in self.agents.items():
-            try:
-                resolver = A2ACardResolver(httpx_client=httpx_client, base_url=url)
-                agent_card = await resolver.get_agent_card()
-                
-                # Store detailed agent information
-                self.agent_cards[name] = {
-                    'url': url,
-                    'description': agent_card.description,
-                    'name': agent_card.name,
-                    'skills': [
-                        {
-                            'name': skill.name,
-                            'description': skill.description,
-                            'examples': skill.examples
-                        } for skill in (agent_card.skills or [])
-                    ]
-                }
-                
-                self.clients[name] = A2AClient(httpx_client=httpx_client, agent_card=agent_card)
-                logger.info(f"✅ Connected to {name}: {agent_card.description}")
-                discovered += 1
-            except Exception as e:
-                logger.warning(f"❌ Failed to connect to {name}: {e}")
-        return discovered
-    
-    def get_client(self, agent_name: str) -> Optional[A2AClient]:
-        """Get client for an agent."""
-        return self.clients.get(agent_name)
-    
-    def get_agents_info(self) -> str:
-        """Get formatted agent information for LLM context."""
-        if not self.agent_cards:
-            return "No agents available."
-        
-        agents_info = "Available agents:\n"
-        for name, info in self.agent_cards.items():
-            agents_info += f"\n- **{name}**: {info['description']}\n"
-            if info['skills']:
-                agents_info += "  Skills:\n"
-                for skill in info['skills']:
-                    agents_info += f"    • {skill['name']}: {skill['description']}\n"
-                    if skill['examples']:
-                        agents_info += f"      Examples: {', '.join(skill['examples'][:3])}\n"
-        return agents_info
+from .registry import IntelligentAgentRegistry
 
-async def call_gemini_api(prompt: str) -> str:
-    """Call Gemini API directly to avoid Pydantic AI issues."""
+
+# --- Pydantic AI Agent setup for orchestrator ---
+@dataclass
+class OrchestratorDeps:
+    api_key: str
+    http_client: httpx.AsyncClient
+
+orchestrator_agent = Agent(
+    model="google-gla:gemini-2.5-flash-lite",
+    output_type=str,
+    deps_type=OrchestratorDeps,
+)
+
+@orchestrator_agent.system_prompt
+def get_system_prompt(ctx: RunContext[OrchestratorDeps]) -> str:
+    # The system prompt is static, loaded from the prompt file
+    return "You are an intelligent agent orchestrator."
+
+async def call_gemini_api(prompt: str) -> Any:
+    """Use a Pydantic AI Agent to orchestrate the workflow and delegate tasks."""
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        # If no API key, use simple keyword matching as fallback
         return None
-    
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
-    
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }],
-        "generationConfig": {
-            "temperature": 0.1,
-            "maxOutputTokens": 100
-        }
-    }
-    
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        
-        data = response.json()
-        if "candidates" in data and data["candidates"]:
-            candidate = data["candidates"][0]
-            if "content" in candidate and "parts" in candidate["content"]:
-                return candidate["content"]["parts"][0]["text"]
-        
-        raise Exception("No valid response from Gemini")
+    async with httpx.AsyncClient() as http_client:
+        deps = OrchestratorDeps(api_key=api_key, http_client=http_client)
+        result = await orchestrator_agent.run(prompt, deps=deps)
+        return result.output
 
 async def smart_fallback_routing(registry: IntelligentAgentRegistry, query: str) -> str:
     """Smart keyword-based routing when LLM is not available."""
     query_lower = query.lower().strip()
     
-    # Analyze agent capabilities and match with query
     for agent_name, info in registry.agent_cards.items():
-        # Check if query matches agent description or skills
         description = info['description'].lower()
         skills_text = ' '.join([
             f"{skill['name']} {skill['description']} {' '.join(skill.get('examples', []))}"
             for skill in info['skills']
         ]).lower()
-        
-        # Time-related queries
+        tags_text = ' '.join(info.get('tags', [])).lower()  # <-- Ajout des tags
+
+        # Recherche dans description, skills et tags
+        # Debugging client.
         if any(keyword in query_lower for keyword in ['time', 'clock', 'hour', 'when', 'minute']):
-            if any(keyword in description + ' ' + skills_text for keyword in ['time', 'clock', 'current']):
+            if any(keyword in description + ' ' + skills_text + ' ' + tags_text for keyword in ['time', 'clock', 'current']):
                 logger.info(f"🎯 Smart routing: {query} → {agent_name} (time-related)")
                 return agent_name
-        
-        # Greeting queries
+
         if any(keyword in query_lower for keyword in ['hello', 'hi', 'greet', 'how are you', 'good morning']):
-            if any(keyword in description + ' ' + skills_text for keyword in ['greet', 'friendly', 'conversation', 'hello']):
+            if any(keyword in description + ' ' + skills_text + ' ' + tags_text for keyword in ['greet', 'friendly', 'conversation', 'hello']):
                 logger.info(f"🎯 Smart routing: {query} → {agent_name} (greeting)")
                 return agent_name
-    
+
+        # Recherche générique sur les tags
+        if any(tag in query_lower for tag in info.get('tags', [])):
+            logger.info(f"🎯 Smart routing: {query} → {agent_name} (tag match)")
+            return agent_name
+
     # Fallback to first agent
     first_agent = next(iter(registry.agent_cards.keys()))
-    logger.info(f"🎯 Smart routing: {query} → {agent_name} (fallback)")
+    logger.info(f"🎯 Smart routing: {query} → {first_agent} (fallback)")
     return first_agent
 
 async def intelligent_route_query(registry: IntelligentAgentRegistry, query: str) -> str:
@@ -159,19 +98,7 @@ async def intelligent_route_query(registry: IntelligentAgentRegistry, query: str
         agents_context = registry.get_agents_info()
         
         # Create prompt for agent selection
-        prompt = f"""You are an intelligent agent orchestrator. Analyze the user query and select the MOST APPROPRIATE agent to handle it.
-
-{agents_context}
-
-User Query: "{query}"
-
-Rules:
-1. Choose the agent whose skills BEST match the user's request
-2. Respond with ONLY the agent name (e.g., "telltime_agent" or "greeting_agent")
-3. If no agent is perfect, choose the closest match
-4. Be concise - respond with just the agent name
-
-Agent to use:"""
+        prompt = PROMPT.format(agents_context=agents_context, query=query)
 
         # Try Gemini API first
         gemini_response = await call_gemini_api(prompt)
@@ -231,38 +158,19 @@ async def send_to_agent(registry: IntelligentAgentRegistry, query: str, agent_na
     except Exception as e:
         return f"❌ Error: {e}"
 
+
+# The orchestrator module now only exposes the orchestrator logic and main() for programmatic use.
 async def main():
-    """Main orchestrator with intelligent LLM-based routing."""
+    """Main orchestrator entry point (for programmatic use)."""
     registry = IntelligentAgentRegistry()
-    
     if not registry.load_registry():
         print("❌ Failed to load agent registry")
         return
-    
     async with httpx.AsyncClient() as client:
         discovered = await registry.discover_agents(client)
-        
         if discovered == 0:
             print("❌ No agents connected")
             return
-        
         print(f"✅ Connected to {discovered} agents")
-        print("🧠 Using intelligent LLM-based routing")
-        print("💬 Ready! Type 'exit' to quit.\n")
-        
-        while True:
-            try:
-                query = input("You: ").strip()
-                if not query or query.lower() in ["exit", "quit"]:
-                    break
-                
-                response = await intelligent_route_query(registry, query)
-                print(f"Assistant: {response}\n")
-                
-            except KeyboardInterrupt:
-                break
-        
-        print("👋 Goodbye!")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        print("🧠 Orchestrator ready.")
+        # No CLI loop here; use client.py for user interaction.
