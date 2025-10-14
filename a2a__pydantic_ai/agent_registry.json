@@ -1,0 +1,4 @@
+{
+    "greeting_agent": "http://localhost:5000",
+    "time_agent": "http://localhost:6000"
+}

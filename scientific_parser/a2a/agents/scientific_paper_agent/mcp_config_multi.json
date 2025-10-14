@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "arxiv_server": {
+      "url": "http://localhost:8000/mcp",
+      "name": "ArXiv Search Server",
+      "description": "Server for searching scientific papers on arXiv"
+    },
+    "semantic_scholar_server": {
+      "url": "http://localhost:8001/mcp",
+      "name": "Semantic Scholar Server", 
+      "description": "Server for searching papers via Semantic Scholar API"
+    },
+    "pubmed_server": {
+      "url": "http://localhost:8002/mcp",
+      "name": "PubMed Server",
+      "description": "Server for searching medical papers on PubMed"
+    }
+  }
+}

@@ -10,3 +10,4 @@ rich
 asyncclick
 fasta2a
 flask
+click

@@ -4,32 +4,63 @@ install:
 	pip install uv
 	uv pip install -r requirements.txt
 
-.PHONY: run-scientist
-run-scientist:
-	@echo "Starting Scientist Agent..."
-	uv run -m agents.scientist_agent
+.PHONY: run-mcp-server
+run-mcp-server:
+	@echo "Starting ArXiv MCP Server on port 8000..."
+	uv run python a2a/agents/scientific_paper_agent/arxiv_server.py
 
-.PHONY: run
-run:
-	@echo "Starting main application..."
-	uv run -m agents.orchestrator_agent chat "Find me the latest papers on large language models"
+.PHONY: run-agent
+run-agent:
+	@echo "Starting Scientific Paper A2A Agent on port 7000..."
+	uv run python agents/orchestrator_agent/__main___a2a_sdk.py
 
-.PHONY: run-server
-run-server:
-	@echo "Starting MCP server..."
-	uv run -m agents.scientist_agent.mcp_server
+.PHONY: client
+client:
+	@echo "Starting A2A client (interactive)..."
+	uv run python a2a/client/client.py
 
-.PHONY: run-client
-run-client:
-	@echo "Starting MCP client..."
-	uv run -m agents.scientist_agent.mcp_client
+.PHONY: search
+search:
+	@echo "Running direct search (usage: make search QUERY='your query' RESULTS=3)..."
+	@if [ -z "$(QUERY)" ]; then \
+		echo "Error: Please provide a query"; \
+		echo "Usage: make search QUERY='machine learning' RESULTS=5"; \
+		exit 1; \
+	else \
+		uv run python a2a/agents/scientific_paper_agent/agent.py "$(QUERY)" $(or $(RESULTS),3); \
+	fi
 
-.PHONY: run-a2a-server
-run-a2a-server:
-	@echo "Starting a2a server..."
-	python a2a/server/tell_time_agent.py
+.PHONY: demo
+demo:
+	@echo "Running interactive demo..."
+	uv run python demo.py $(QUERY) $(RESULTS)
 
-.PHONY: run-a2a-client
-run-a2a-client:
-	@echo "Starting a2a client..."
-	python a2a/client/time_client.py
+.PHONY: help
+help:
+	@echo "🔬 Scientific Paper Agent - Available Commands"
+	@echo ""
+	@echo "Setup:"
+	@echo "  make install          - Install all dependencies"
+	@echo ""
+	@echo "Run System (3 terminals required):"
+	@echo "  make run-mcp-server   - Start ArXiv MCP Server (port 8000)"
+	@echo "  make run-agent        - Start Scientific Paper Agent (port 7000)"
+	@echo "  make client           - Start A2A client (interactive)"
+	@echo ""
+	@echo "Quick Commands:"
+	@echo "  make search QUERY='ai' RESULTS=5  - Direct search (no A2A)"
+	@echo "  make demo             - Interactive demo"
+	@echo ""
+	@echo "Example Workflow:"
+	@echo "  Terminal 1: make run-mcp-server"
+	@echo "  Terminal 2: make run-agent"
+	@echo "  Terminal 3: make client"
+	@echo ""
+	@echo "For more details: See README.md"
+
+.PHONY: clean
+clean:
+	@echo "Cleaning up..."
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	@echo "Clean complete!"

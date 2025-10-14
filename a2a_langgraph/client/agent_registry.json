@@ -1,4 +1,0 @@
-{
-  "greeting_agent": "http://localhost:5000",
-  "telltime_agent": "http://localhost:8000"
-}
