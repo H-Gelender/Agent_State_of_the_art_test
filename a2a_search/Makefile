@@ -60,9 +60,20 @@ run-docker-search:
 .PHONY: build-docker-scientist-search
 build-docker-scientist-search:
 	@echo "Building Docker image..."
-	docker build -t scientist-search -f agents/scientific_agent/paper-search-mcp/Dockerfile agents/scientific_agent/paper-search-mcp
+	docker build -t scientist-search -f agents/scientific_agent/paper-search-mcp agents/scientific_agent/paper-search-mcp
 
 .PHONY: run-docker-scientist-search
 run-docker-scientist-search:
 	@echo "Running Docker container..."
 	docker run --rm -it scientist-search
+
+.PHONY: build-docker-a2a-search
+build-docker-a2a-scientist:
+	@echo "Building Docker image for A2A Scientist Agent..."
+	docker build -t a2a-scientific-agent -f agents/scientific_agent/Dockerfile .
+
+.PHONY: run-docker-a2a-searchnon 
+run-docker-a2a-scientist:
+	@echo "Running Docker container for A2A Scientist Agent on http://localhost:8000"
+	@echo "Press Ctrl+C to stop the container."
+	docker run --rm -it -p 8000:8000 --name a2a-scientific-container a2a-scientific-agent

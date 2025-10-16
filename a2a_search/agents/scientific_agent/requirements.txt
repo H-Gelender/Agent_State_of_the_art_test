@@ -1,0 +1,6 @@
+a2a-sdk
+python-dotenv
+requests
+
+asyncclick
+uvicorn

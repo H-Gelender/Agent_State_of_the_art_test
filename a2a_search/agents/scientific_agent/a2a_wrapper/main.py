@@ -13,10 +13,18 @@ from a2a.types import AgentCard, AgentSkill, AgentCapabilities
 
 # --- Intégration de votre logique existante ---
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-
-from agents.scientific_agent.client.agent import create_and_initialize_agent
-from agents.scientific_agent.a2a_wrapper.agent_executor import SearchAgentExecutor
-
+try:
+    from agents.scientific_agent.client.agent import create_and_initialize_agent
+    from agents.scientific_agent.a2a_wrapper.agent_executor import SearchAgentExecutor
+except ImportError as e:
+    print(f"❌ ImportError (absolute import): {e}")
+    try:
+        from client.agent import create_and_initialize_agent
+        from agent_executor import SearchAgentExecutor
+    except ImportError as e2:
+        print(f"❌ ImportError (relative import): {e2}")
+        raise
+# ---------------------------------------------
 load_dotenv()
 
 def debug(msg: str):
@@ -38,18 +46,23 @@ async def main_a2a():
         examples=['What is the A2A protocol?']
     )
 
-    host = "localhost"
-    port = 8000
+    # Use 0.0.0.0 to listen on all interfaces (required for Docker)
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    
+    # For URLs, use localhost (or allow override via env var)
+    public_host = os.getenv("PUBLIC_HOST", "localhost")
+    
     capabilities = AgentCapabilities(streaming=False, push_notifications=False)
     jsonrpc_endpoint = {
         "type": "jsonrpc",
-        "url": f'http://{host}:{port}/api/v1'
+        "url": f'http://{public_host}:{port}/api/v1'
     }
 
     agent_card = AgentCard(
         name='Search Agent (A2A)',
         description='An agent that can perform web searches and provide answers.',
-        url=f'http://{host}:{port}/',
+        url=f'http://{public_host}:{port}/',
         version='1.0.0',
         skills=[search_skill],
         capabilities=capabilities,
@@ -76,7 +89,8 @@ async def main_a2a():
     )
 
     print("🚀 Starting A2A Agent Wrapper (New API)...")
-    print(f"   Agent Card will be available at http://{host}:{port}/.well-known/agent.json")
+    print(f"   Listening on {host}:{port}")
+    print(f"   Agent Card will be available at http://{public_host}:{port}/.well-known/agent.json")
 
     # 7. Lancer le serveur avec Uvicorn
     config = uvicorn.Config(server_app.build(), host=host, port=port)

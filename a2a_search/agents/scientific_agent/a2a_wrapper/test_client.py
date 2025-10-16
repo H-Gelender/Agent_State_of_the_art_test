@@ -26,7 +26,8 @@ async def main():
     
     logger.info(f"🚀 Lancement du client pour interroger l'agent à {AGENT_BASE_URL}")
 
-    async with httpx.AsyncClient() as httpx_client:
+    # Increase timeout to 120 seconds for AI processing
+    async with httpx.AsyncClient(timeout=120.0) as httpx_client:
         
         resolver = A2ACardResolver(
             httpx_client=httpx_client,

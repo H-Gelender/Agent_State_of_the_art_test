@@ -12,10 +12,18 @@ from a2a.utils import new_agent_text_message
 from a2a.types import TextPart
 
 # Importe la logique de notre agent
-from agents.scientific_agent.client.agent import AgentWrapper
-from agents.scientific_agent.client.__main__ import run_agent
-
-
+try:
+    from agents.scientific_agent.client.agent import AgentWrapper
+    from agents.scientific_agent.client.__main__ import run_agent
+except ImportError as e:
+    print(f"❌ ImportError (absolute import): {e}")
+    try:
+        from client.agent import AgentWrapper
+        from client.__main__ import run_agent
+    except ImportError as e2:
+        print(f"❌ ImportError (relative import): {e2}")
+        raise
+        
 class SearchAgentExecutor(AgentExecutor):
     """
     Exécute les tâches pour le Search Agent en respectant le contrat A2A.
@@ -41,7 +49,6 @@ class SearchAgentExecutor(AgentExecutor):
         # Le message est dans context.request.params.message.parts
         query = ""
         try:
-            print(" context:", context)
             # On cherche la partie textuelle du message de l'utilisateur
             for part in context.message.parts:
                 if isinstance(part.root, TextPart):
