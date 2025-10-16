@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 try:
     from agents.scientific_agent.client.agent import create_and_initialize_agent
     from agents.scientific_agent.a2a_wrapper.agent_executor import SearchAgentExecutor
+    from agents.scientific_agent.a2a_wrapper.config import HOST, PORT, PUBLIC_HOST, MODEL
+
 except ImportError as e:
     print(f"❌ ImportError (absolute import): {e}")
     try:
@@ -46,18 +48,12 @@ async def main_a2a():
         examples=['What is the A2A protocol?']
     )
 
-    # Use 0.0.0.0 to listen on all interfaces (required for Docker)
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
-    
-    # For URLs, use localhost (or allow override via env var)
-    public_host = os.getenv("PUBLIC_HOST", "localhost")
+    # Configuration depuis config.py
+    host = HOST
+    port = PORT
+    public_host = PUBLIC_HOST
     
     capabilities = AgentCapabilities(streaming=False, push_notifications=False)
-    jsonrpc_endpoint = {
-        "type": "jsonrpc",
-        "url": f'http://{public_host}:{port}/api/v1'
-    }
 
     agent_card = AgentCard(
         name='Search Agent (A2A)',
@@ -68,10 +64,7 @@ async def main_a2a():
         capabilities=capabilities,
         default_input_modes=['text/plain'],
         default_output_modes=['text/plain'],
-        jsonrpc_endpoints=[jsonrpc_endpoint],
     )
-    agent_card_dict = agent_card.model_dump(mode='json')
-    debug(f"Agent Card: {agent_card_dict}")
     # 4. Créer l'AgentExecutor avec l'agent initialisé
     agent_executor = SearchAgentExecutor(agent=initialized_agent)
 
