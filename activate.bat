@@ -1,2 +1,2 @@
 @echo "activate virtual environment"
-call .venv\Scripts\activate.bat
+call .venv\Scripts\activate.batµ£

@@ -25,28 +25,33 @@ a2a-project:
 # 	echo. > client/__main__.py
 # 	@echo creating uv structure
 	uv init
-	
-.PHONY: run-langgraph
-run-langgraph:
-	@echo "Starting langgraph server..."
-	uv run python -m agents.search_agent
 
-.PHONY: run-client
-run-client:
-	@echo "Starting a2a client..."
-	python agents/search_agent/client/agent_executor.py
-
-.PHONY: client
-client:
-	@echo "Starting a2a client..."
+.PHONY: client-search-agent
+client-search-agent:
+	@echo "Starting duckduck go search client..."
 	python -m agents.search_agent.client
 
-.PHONY: build-docker
-build-docker:
+.PHONY: client-scientist-search
+client-scientist-search:
+	@echo "Starting scientist search client..."
+	python -m agents.scientific_agent.client
+
+.PHONY: build-docker-search
+build-docker-search:
 	@echo "Building Docker image..."
 	docker build -t duckduck -f agents/search_agent/server/Dockerfile agents/search_agent/server
 
-.PHONY: run-docker
-run-docker:
+.PHONY: run-docker-search
+run-docker-search:
 	@echo "Running Docker container..."
 	docker run --rm -it duckduck
+
+.PHONY: build-docker-scientist-search
+build-docker-scientist-search:
+	@echo "Building Docker image..."
+	docker build -t scientist-search -f agents/scientific_agent/paper-search-mcp/Dockerfile agents/scientific_agent/paper-search-mcp
+
+.PHONY: run-docker-scientist-search
+run-docker-scientist-search:
+	@echo "Running Docker container..."
+	docker run --rm -it scientist-search

@@ -24,22 +24,6 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from langchain_mcp_adapters.tools import load_mcp_tools
 
-
-def get_mcp_servers_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Extrait la configuration des serveurs MCP du fichier de configuration.
-    
-    Args:
-        config: Configuration complète chargée depuis le JSON
-        
-    Returns:
-        dict: Dictionnaire des serveurs MCP configurés
-    """
-    mcp_servers = config.get("mcpServers", {})
-    if not mcp_servers:
-        print("⚠️  No MCP servers found in the configuration.")
-    return mcp_servers
-
 def read_config_json() -> dict:
     """
     Lit le fichier de configuration JSON des serveurs MCP.
@@ -67,6 +51,23 @@ def read_config_json() -> dict:
     except Exception as e:
         print(f"❌ Failed to read config file: {e}")
         sys.exit(1)
+
+
+def get_mcp_servers_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extrait la configuration des serveurs MCP du fichier de configuration.
+    
+    Args:
+        config: Configuration complète chargée depuis le JSON
+        
+    Returns:
+        dict: Dictionnaire des serveurs MCP configurés
+    """
+    mcp_servers = config.get("mcpServers", {})
+    if not mcp_servers:
+        print("⚠️  No MCP servers found in the configuration.")
+    return mcp_servers
+
 
 async def connect_to_mcp_server(
     server_name: str,
