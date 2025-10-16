@@ -26,6 +26,17 @@ a2a-project:
 # 	@echo creating uv structure
 	uv init
 
+.PHONY: run-a2a-search-agent
+run-a2a-scientific-agent:
+	@echo "Starting A2A wrapper for Scientific Agent on http://localhost:8000..."
+	python -m agents.scientific_agent.a2a_wrapper.main
+
+.PHONY: test-a2a-search-agent
+test-a2a-scientific-agent:
+	@echo "Running A2A test client for Scientific Agent..."
+	@echo "Ensure the A2A server is running in another terminal with 'make run-a2a-search-agent'"
+	python -m agents.scientific_agent.a2a_wrapper.test_client
+
 .PHONY: client-search-agent
 client-search-agent:
 	@echo "Starting duckduck go search client..."

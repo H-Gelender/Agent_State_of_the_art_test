@@ -7,10 +7,17 @@ Modifiez ce fichier pour changer le modèle, la température, ou le type d'agent
 """
 
 import os
-from typing import List, Any, Dict
+from contextlib import AsyncExitStack
+
+from typing import List, Any, Tuple
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 
+from .mcp_utils import (
+    read_config_json,
+    get_mcp_servers_config,
+    connect_to_all_mcp_servers,
+)
 
 class AgentWrapper:
     """
@@ -118,3 +125,31 @@ def get_agent(tools: List[Any]) -> AgentWrapper:
     print(f"   Temperature: 0")
     
     return AgentWrapper(agent, agent_type)
+
+# --- NOUVELLE FONCTION CENTRALISÉE ---
+async def create_and_initialize_agent() -> Tuple[AgentWrapper, AsyncExitStack]:
+    """
+    La nouvelle "usine" à agent. Lit la config, se connecte aux serveurs,
+    crée l'agent et le retourne prêt à l'emploi.
+    
+    Returns:
+        Un tuple contenant l'AgentWrapper initialisé et l'AsyncExitStack
+        pour gérer le cycle de vie des connexions.
+    """
+    print("🚀 Initializing Agent...")
+    config = read_config_json()
+    mcp_servers = get_mcp_servers_config(config)
+    
+    if not mcp_servers:
+        raise RuntimeError("❌ No MCP servers configured. Cannot start agent.")
+        
+    exit_stack = AsyncExitStack()
+    try:
+        tools = await connect_to_all_mcp_servers(mcp_servers, exit_stack, verbose=True)
+        agent = get_agent(tools)
+        # On retourne l'agent ET l'exit_stack pour que l'appelant gère la fermeture
+        return agent, exit_stack
+    except Exception as e:
+        # En cas d'erreur, on s'assure de fermer le stack
+        await exit_stack.aclose()
+        raise e
