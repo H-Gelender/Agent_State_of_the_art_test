@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # MCP Server pour la recherche de papers scientifiques
+  paper-search-mcp:
+    build:
+      context: ./agents/scientific_agent/paper-search-mcp
+      dockerfile: Dockerfile
+    container_name: paper-search-mcp
+    networks:
+      - a2a-network
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  # Agent scientifique avec wrapper A2A
+  a2a-scientific-agent:
+    build:
+      context: .
+      dockerfile: ./agents/scientific_agent/Dockerfile
+    container_name: a2a-scientific-agent
+    ports:
+      - "8000:8000"
+    depends_on:
+      - paper-search-mcp
+    networks:
+      - a2a-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - PUBLIC_HOST=localhost
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+networks:
+  a2a-network:
+    driver: bridge

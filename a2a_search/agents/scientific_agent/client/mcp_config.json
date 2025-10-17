@@ -1,12 +1,9 @@
 {
     "mcpServers": {
         "paper-search": {
-            "command": "docker",
+            "command": "python",
             "args": [
-                "run",
-                "-i",
-                "--rm",
-                "mcp/paper-search"
+                "agents/scientific_agent/client/mcp_wrapper.py"
             ]
         }
     }

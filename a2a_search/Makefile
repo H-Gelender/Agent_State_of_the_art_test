@@ -5,6 +5,12 @@ help:
 	@echo "Setup:"
 	@echo "  make install                    Install dependencies"
 	@echo ""
+	@echo "Docker Compose:"
+	@echo "  make docker-compose-up          Start all services with docker-compose"
+	@echo "  make docker-compose-down        Stop all services"
+	@echo "  make docker-compose-logs        View logs from all services"
+	@echo "  make docker-compose-rebuild     Rebuild and start all services"
+	@echo ""
 	@echo "A2A Wrapper (Scientific Agent):"
 	@echo "  make run-a2a-scientific-agent   Run A2A wrapper locally"
 	@echo "  make test-a2a-scientific-agent  Test A2A wrapper"
@@ -28,6 +34,32 @@ install:
 	@echo "Installing dependencies..."
 	pip install uv
 	uv pip install -r requirements.txt
+
+# ============================================
+# DOCKER COMPOSE
+# ============================================
+
+.PHONY: docker-compose-up
+docker-compose-up:
+	@echo "Starting all services with docker-compose..."
+	docker-compose up --build
+
+.PHONY: docker-compose-down
+docker-compose-down:
+	@echo "Stopping all services..."
+	docker-compose down
+
+.PHONY: docker-compose-logs
+docker-compose-logs:
+	@echo "Viewing logs from all services..."
+	docker-compose logs -f
+
+.PHONY: docker-compose-rebuild
+docker-compose-rebuild:
+	@echo "Rebuilding and starting all services..."
+	docker-compose down
+	docker-compose up --build -d
+	@echo "Services started in background. Use 'make docker-compose-logs' to view logs."
 
 # ============================================
 # A2A WRAPPER (SCIENTIFIC AGENT)

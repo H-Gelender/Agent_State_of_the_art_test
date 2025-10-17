@@ -15,7 +15,7 @@ from a2a.types import MessageSendParams, SendMessageRequest, Role, TextPart, Par
 
 # --- Configuration ---
 AGENT_BASE_URL = 'http://localhost:8000'
-QUESTION_TO_AGENT = "What is the Agent-to-Agent (A2A) protocol?"
+QUESTION_TO_AGENT = "Find recent papers about attention mechanisms in Large Language Models from arXiv"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -1,6 +1,11 @@
 # Étape 1: Base Python
 FROM python:3.12-slim
 
+# Installer Docker CLI pour pouvoir exécuter docker exec
+RUN apt-get update && \
+    apt-get install -y docker.io && \
+    rm -rf /var/lib/apt/lists/*
+
 # Étape 2: Répertoire de travail
 WORKDIR /app
 
